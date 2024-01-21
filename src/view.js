@@ -14,7 +14,7 @@ export default (elements, state) => onChange(state, (path, value) => {
       }
       p.classList.remove('text-danger');
       input.classList.add('is-valid');
-      input.textContent = '';
+      input.value = '';
       p.classList.add('text-success');
       p.textContent = 'RSS успешно загружен';
     }
