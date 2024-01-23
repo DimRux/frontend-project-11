@@ -1,8 +1,8 @@
 import onChange from 'on-change';
 
-export default (elements, state) => onChange(state, (path, value) => {
+export default (elements, i18n, state) => onChange(state, (path, value) => {
   const { main, input, p } = elements;
-  console.log(state);
+
   const body = document.querySelector('body');
   body.textContent = '';
   body.prepend(main);
@@ -16,7 +16,7 @@ export default (elements, state) => onChange(state, (path, value) => {
       input.classList.add('is-valid');
       input.value = '';
       p.classList.add('text-success');
-      p.textContent = 'RSS успешно загружен';
+      p.textContent = i18n.t('successful');
     }
   }
 
@@ -27,6 +27,6 @@ export default (elements, state) => onChange(state, (path, value) => {
     }
     input.classList.add('is-invalid');
     p.classList.add('text-danger');
-    p.textContent = state.error;
+    p.textContent = i18n.t(state.error);
   }
 });
