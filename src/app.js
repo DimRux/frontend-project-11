@@ -1,7 +1,10 @@
 import * as yup from 'yup';
 import i18next from 'i18next';
+import axios from 'axios';
+import _ from 'lodash';
 import view from './view.js';
 import resources from './resources.js';
+import parser from './parser.js';
 
 export default () => {
   const elements = {
@@ -19,7 +22,8 @@ export default () => {
   const initState = {
     formState: 'filling',
     input: '',
-    feed: '',
+    feeds: [],
+    posts: [],
     error: null,
   };
 
@@ -57,11 +61,28 @@ export default () => {
 
     elements.form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const currentSchema = schema.notOneOf([watchedState.feed]);
+      const currentSchema = schema.notOneOf(watchedState.feeds);
       currentSchema.validate(watchedState.input, { abortEarly: false })
         .then(() => {
-          watchedState.feed = watchedState.input;
-          watchedState.formState = 'finished';
+          watchedState.feeds.push(watchedState.input);
+          axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(watchedState.input)}`)
+            .then((res) => {
+              const essence = parser(res.data.contents);
+              const [feed, posts] = essence;
+              const feedId = _.uniqueId();
+              feed.feedId = feedId;
+              const createIdPosts = posts.map((item) => ({ ...item, feedId, id: _.uniqueId() }));
+              const newFeed = [feed, ...watchedState.feeds];
+              const newPosts = [...createIdPosts, ...watchedState.posts];
+              watchedState.feeds = newFeed;
+              watchedState.posts = newPosts;
+              watchedState.formState = 'finished';
+            })
+            .catch((err) => {
+              if (err.message === 'parser') {
+                watchedState.error = 'errors.parser';
+              } else watchedState.error = 'errors.network';
+            });
         })
         .catch((error) => {
           watchedState.formState = 'failed';
