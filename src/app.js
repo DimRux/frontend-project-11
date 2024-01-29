@@ -6,7 +6,7 @@ import view from './view.js';
 import resources from './resources.js';
 import parser from './parser.js';
 
-export default () => {
+export default function app() {
   const elements = {
     main: document.querySelector('main'),
     input: document.querySelector('input'),
@@ -22,6 +22,7 @@ export default () => {
   const initState = {
     formState: 'filling',
     input: '',
+    feedsUrl: [],
     feeds: [],
     posts: [],
     error: null,
@@ -59,14 +60,29 @@ export default () => {
 
     const schema = yup.string().url();
 
+    function checkRss() {
+      const getRssFeeds = watchedState.feedsUrl.map((feed) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(feed)}`));
+      const promises = Promise.all(getRssFeeds);
+      promises.then((feeds) => feeds.forEach((res) => {
+        watchedState.formState = 'processing';
+        const essence = parser(res.data.contents);
+        const [feed, posts] = essence;
+        watchedState.feeds = [feed];
+        watchedState.posts = posts;
+        watchedState.formState = 'finished';
+        setTimeout(checkRss, 5000);
+      }));
+    }
+
     elements.form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const currentSchema = schema.notOneOf(watchedState.feeds);
+      const currentSchema = schema.notOneOf(watchedState.feedsUrl);
       currentSchema.validate(watchedState.input, { abortEarly: false })
         .then(() => {
-          watchedState.feeds.push(watchedState.input);
+          watchedState.feedsUrl.push(watchedState.input);
           axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(watchedState.input)}`)
             .then((res) => {
+              watchedState.formState = 'processing';
               const essence = parser(res.data.contents);
               const [feed, posts] = essence;
               const feedId = _.uniqueId();
@@ -87,7 +103,10 @@ export default () => {
         .catch((error) => {
           watchedState.formState = 'failed';
           watchedState.error = error.message;
+        })
+        .finally(() => {
+          setTimeout(checkRss, 5000);
         });
     });
   });
-};
+}
