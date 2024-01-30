@@ -7,8 +7,10 @@ import resources from './resources.js';
 import parser from './parser.js';
 
 export default function app() {
+  const container = document.querySelector('.container-xxl');
+  const containerfirstChild = container.querySelector('.row');
   const elements = {
-    main: document.querySelector('main'),
+    sections: containerfirstChild,
     input: document.querySelector('input'),
     p: document.querySelector('.feedback'),
     form: document.querySelector('form'),
@@ -21,6 +23,7 @@ export default function app() {
 
   const initState = {
     formState: 'filling',
+    formIsValid: true,
     input: '',
     feedsUrl: [],
     feeds: [],
@@ -63,16 +66,24 @@ export default function app() {
     function checkRss() {
       const getRssFeeds = watchedState.feedsUrl.map((feed) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(feed)}`));
       const promises = Promise.all(getRssFeeds);
-      promises.then((feeds) => feeds.forEach((res) => {
-        watchedState.formState = 'processing';
-        const essence = parser(res.data.contents);
-        const [feed, posts] = essence;
-        watchedState.feeds = [feed];
-        watchedState.posts = posts;
-        watchedState.formState = 'finished';
-        setTimeout(checkRss, 5000);
-      }));
+      promises
+        .then((feeds) => {
+          const resultFeeds = [];
+          const resultPosts = [];
+          feeds.forEach((res) => {
+            watchedState.formState = 'processing';
+            const essence = parser(res.data.contents);
+            const [feed, posts] = essence;
+            resultFeeds.unshift(feed);
+            resultPosts.unshift(...posts);
+            watchedState.feeds = resultFeeds;
+            watchedState.posts = resultPosts;
+            watchedState.formState = 'finished';
+          });
+        });
+      setTimeout(checkRss, 5000);
     }
+    checkRss();
 
     elements.form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -92,9 +103,11 @@ export default function app() {
               const newPosts = [...createIdPosts, ...watchedState.posts];
               watchedState.feeds = newFeed;
               watchedState.posts = newPosts;
+              watchedState.formIsValid = true;
               watchedState.formState = 'finished';
             })
             .catch((err) => {
+              watchedState.formIsValid = false;
               if (err.message === 'parser') {
                 watchedState.error = 'errors.parser';
               } else watchedState.error = 'errors.network';
@@ -102,10 +115,8 @@ export default function app() {
         })
         .catch((error) => {
           watchedState.formState = 'failed';
+          watchedState.formIsValid = false;
           watchedState.error = error.message;
-        })
-        .finally(() => {
-          setTimeout(checkRss, 5000);
         });
     });
   });

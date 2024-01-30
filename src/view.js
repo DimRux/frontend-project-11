@@ -1,24 +1,24 @@
 import onChange from 'on-change';
 
 export default (elements, i18n, state) => onChange(state, (path, value) => {
-  const { main, input, p } = elements;
+  const { sections, input, p } = elements;
 
-  const body = document.querySelector('body');
-  body.textContent = '';
-  body.prepend(main);
+  const container = document.querySelector('.container-xxl');
+  container.textContent = '';
+  container.append(sections);
 
   if (path === 'formState') {
     if (value === 'finished') {
-      if (input.classList.contains('is-invalid')) {
+      if (state.formIsValid) {
         input.classList.remove('is-invalid');
+        p.classList.remove('text-danger');
+        input.classList.add('is-valid');
+        input.value = '';
+        p.classList.add('text-success');
+        p.textContent = i18n.t('successful');
       }
-      p.classList.remove('text-danger');
-      input.classList.add('is-valid');
-      input.value = '';
-      p.classList.add('text-success');
-      p.textContent = i18n.t('successful');
 
-      const posts = body.querySelector('.posts');
+      const posts = document.querySelector('.posts');
       posts.textContent = '';
       const divPosts = document.createElement('div');
       divPosts.classList.add('card', 'border-0');
@@ -53,7 +53,7 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
       divPosts.append(divPostsHeader, ulPosts);
       posts.append(divPosts);
 
-      const feeds = body.querySelector('.feeds');
+      const feeds = document.querySelector('.feeds');
       feeds.textContent = '';
       const divFeeds = document.createElement('div');
       divFeeds.classList.add('card', 'border-0');
