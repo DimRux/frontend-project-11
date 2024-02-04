@@ -1,3 +1,4 @@
+/* eslint-disable curly */
 import onChange from 'on-change';
 
 export default (elements, i18n, state) => onChange(state, (path, value) => {
@@ -33,7 +34,11 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
         const li = document.createElement('li');
         li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-item-start', 'border-0', 'border-end-0');
         const a = document.createElement('a');
-        a.classList.add('fw-bold');
+        const VisitedLinks = state.UIstate.modal;
+        if (VisitedLinks.includes(post.id)) {
+          a.classList.remove('fw-bold');
+          a.classList.add('fw-normal');
+        } else a.classList.add('fw-bold');
         a.setAttribute('href', `${post.link}`);
         a.setAttribute('target', '_blank');
         a.setAttribute('rel', 'noopener noreferrer');
@@ -79,6 +84,36 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
       divFeedsHeader.append(divFeedsHeaderTitle);
       divFeeds.append(divFeedsHeader, ulFeeds);
       feeds.append(divFeeds);
+
+      const buttons = ulPosts.querySelectorAll('button');
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          const postByBtn = state.posts.filter((post) => post.id === id)[0];
+          const body = document.querySelector('body');
+          body.classList.add('modal-open');
+          body.setAttribute('style', 'overflow: hidden; padding-right: 0px;');
+          elements.modal.classList.add('show');
+          elements.modal.setAttribute('style', 'display: block');
+          elements.modal.removeAttribute('aria-hidden');
+          elements.modal.setAttribute('aria-modal', 'true');
+          elements.modal.setAttribute('role', 'dialog');
+          const modalTitle = elements.modal.querySelector('.modal-title');
+          modalTitle.textContent = postByBtn.content;
+          const modalBody = elements.modal.querySelector('.modal-body');
+          modalBody.textContent = postByBtn.description;
+          const fullArticle = elements.modal.querySelector('.full-article');
+          fullArticle.setAttribute('href', `${postByBtn.link}`);
+          fullArticle.textContent = i18n.t('fullArticle');
+          const btnCloseModal = elements.modal.querySelector('.btn-secondary');
+          btnCloseModal.textContent = i18n.t('modalBtnClose');
+        });
+        btn.addEventListener('hidden.bs.modal', () => {
+          const nowModal = document.querySelector('.modal');
+          nowModal.textContent = '';
+          nowModal.append(elements.modal);
+        });
+      });
     }
   }
 
@@ -90,5 +125,26 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
     input.classList.add('is-invalid');
     p.classList.add('text-danger');
     p.textContent = i18n.t(state.error);
+  }
+
+  if (path === 'UIstate.modal') {
+    const postByBtn = state.posts.filter((post) => post.id === value.id)[0];
+    const body = document.querySelector('body');
+    body.classList.add('modal-open');
+    body.setAttribute('style', 'overflow: hidden; padding-right: 0px;');
+    elements.modal.classList.add('show');
+    elements.modal.setAttribute('style', 'display: block');
+    elements.modal.removeAttribute('aria-hidden');
+    elements.modal.setAttribute('aria-modal', 'true');
+    elements.modal.setAttribute('role', 'dialog');
+    const modalTitle = elements.modal.querySelector('.modal-title');
+    modalTitle.textContent = postByBtn.content;
+    const modalBody = elements.modal.querySelector('.modal-body');
+    modalBody.textContent = postByBtn.description;
+    const fullArticle = elements.modal.querySelector('.full-article');
+    fullArticle.setAttribute('href', `${postByBtn.link}`);
+    fullArticle.textContent = i18n.t('fullArticle');
+    const btnCloseModal = elements.modal.querySelector('.btn-secondary');
+    btnCloseModal.textContent = i18n.t('modalBtnClose');
   }
 });

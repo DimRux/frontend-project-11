@@ -14,6 +14,8 @@ export default {
       feeds: 'Фиды',
       posts: 'Посты',
       btnPostWatch: 'Просмотр',
+      modalBtnClose: 'Закрыть',
+      fullArticle: 'Читать полностью',
       errors: {
         validation: {
           url: 'Ссылка должна быть валидным URL',

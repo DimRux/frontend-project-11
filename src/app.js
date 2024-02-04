@@ -11,13 +11,14 @@ export default function app() {
   const containerfirstChild = container.querySelector('.row');
   const elements = {
     sections: containerfirstChild,
+    modal: document.querySelector('.modal'),
     input: document.querySelector('input'),
     p: document.querySelector('.feedback'),
     form: document.querySelector('form'),
     title: document.querySelector('h1'),
     tagline: document.querySelector('.lead'),
     fillInput: document.querySelector('label'),
-    btnSubmit: document.querySelector('button'),
+    btnSubmit: document.querySelector('.btn-lg'),
     inputExample: document.querySelector('.text-muted'),
   };
 
@@ -28,6 +29,9 @@ export default function app() {
     feedsUrl: [],
     feeds: [],
     posts: [],
+    UIstate: {
+      modal: [],
+    },
     error: null,
   };
 
@@ -74,8 +78,11 @@ export default function app() {
             watchedState.formState = 'processing';
             const essence = parser(res.data.contents);
             const [feed, posts] = essence;
+            const feedId = _.uniqueId();
+            feed.feedId = feedId;
+            const createIdPosts = posts.map((item) => ({ ...item, feedId, id: _.uniqueId() }));
             resultFeeds.unshift(feed);
-            resultPosts.unshift(...posts);
+            resultPosts.unshift(...createIdPosts);
             watchedState.feeds = resultFeeds;
             watchedState.posts = resultPosts;
             watchedState.formState = 'finished';
