@@ -14,7 +14,6 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
         input.classList.remove('is-invalid');
         p.classList.remove('text-danger');
         input.classList.add('is-valid');
-        input.value = '';
         p.classList.add('text-success');
         p.textContent = i18n.t('successful');
       }

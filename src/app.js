@@ -110,6 +110,7 @@ export default function app() {
       currentSchema.validate(watchedState.input, { abortEarly: false })
         .then(() => {
           watchedState.feedsUrl.push(watchedState.input);
+          elements.input.value = '';
           axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(watchedState.input)}`)
             .then((res) => {
               watchedState.formState = 'processing';
