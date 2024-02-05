@@ -95,20 +95,15 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
             a.classList.add('fw-normal', 'link-secondary');
           }
           const postByBtn = state.posts.filter((post) => post.id === id)[0];
-          const body = document.querySelector('body');
-          body.classList.add('modal-open');
-          body.setAttribute('style', 'overflow: hidden; padding-right: 0px;');
-          elements.modal.classList.add('show');
-          elements.modal.setAttribute('style', 'display: block');
-          elements.modal.removeAttribute('aria-hidden');
-          elements.modal.setAttribute('aria-modal', 'true');
-          elements.modal.setAttribute('role', 'dialog');
           const modalTitle = elements.modal.querySelector('.modal-title');
           modalTitle.textContent = postByBtn.content;
           const modalBody = elements.modal.querySelector('.modal-body');
           modalBody.textContent = postByBtn.description;
           const fullArticle = elements.modal.querySelector('.full-article');
           fullArticle.setAttribute('href', `${postByBtn.link}`);
+          fullArticle.textContent = i18n.t('fullArticle');
+          const btnCloseModal = elements.modal.querySelector('.btn-secondary');
+          btnCloseModal.textContent = i18n.t('modalBtnClose');
         });
         btn.addEventListener('hidden.bs.modal', () => {
           const nowModal = document.querySelector('.modal');
