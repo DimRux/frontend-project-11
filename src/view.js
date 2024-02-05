@@ -109,9 +109,6 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
           modalBody.textContent = postByBtn.description;
           const fullArticle = elements.modal.querySelector('.full-article');
           fullArticle.setAttribute('href', `${postByBtn.link}`);
-          fullArticle.textContent = i18n.t('fullArticle');
-          const btnCloseModal = elements.modal.querySelector('.btn-secondary');
-          btnCloseModal.textContent = i18n.t('modalBtnClose');
         });
         btn.addEventListener('hidden.bs.modal', () => {
           const nowModal = document.querySelector('.modal');
