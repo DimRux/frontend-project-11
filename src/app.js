@@ -75,18 +75,30 @@ export default function app() {
           const resultFeeds = [];
           const resultPosts = [];
           feeds.forEach((res) => {
-            watchedState.formState = 'processing';
             const essence = parser(res.data.contents);
             const [feed, posts] = essence;
-            const feedId = _.uniqueId();
+            const postsTitle = posts.map(({ content }) => content);
+            const oldContentPosts = watchedState.posts.map(({ content }) => content);
+            const newPostsTitle = postsTitle
+              .filter((post) => !oldContentPosts.includes(post));
+            const newPosts = posts.filter(({ content }) => newPostsTitle.includes(content));
+            const oldFeed = watchedState.feeds.filter(({ title }) => title === feed.title);
+            const { feedId } = oldFeed[0];
             feed.feedId = feedId;
-            const createIdPosts = posts.map((item) => ({ ...item, feedId, id: _.uniqueId() }));
+            const oldPosts = watchedState.posts
+              .filter((post) => post.feedId === feedId);
+            const createIdPosts = newPosts.map((item) => ({ ...item, feedId, id: _.uniqueId() }));
+            const allPosts = [...createIdPosts, ...oldPosts]
+              .filter((item, index) => index < oldPosts.length);
             resultFeeds.unshift(feed);
-            resultPosts.unshift(...createIdPosts);
-            watchedState.feeds = resultFeeds;
-            watchedState.posts = resultPosts;
-            watchedState.formState = 'finished';
+            resultPosts.unshift(...allPosts);
           });
+          watchedState.formState = 'processing';
+          watchedState.feeds = resultFeeds;
+          watchedState.posts = resultPosts;
+          if (resultPosts.length !== 0) {
+            watchedState.formState = 'finished';
+          }
         });
       setTimeout(checkRss, 5000);
     }

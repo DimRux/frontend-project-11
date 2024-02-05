@@ -37,7 +37,7 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
         const VisitedLinks = state.UIstate.modal;
         if (VisitedLinks.includes(post.id)) {
           a.classList.remove('fw-bold');
-          a.classList.add('fw-normal');
+          a.classList.add('fw-normal', 'link-secondary');
         } else a.classList.add('fw-bold');
         a.setAttribute('href', `${post.link}`);
         a.setAttribute('target', '_blank');
@@ -89,6 +89,12 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
       buttons.forEach((btn) => {
         btn.addEventListener('click', () => {
           const id = btn.getAttribute('data-id');
+          if (!state.UIstate.modal.includes(id)) {
+            state.UIstate.modal.push(id);
+            const a = ulPosts.querySelector(`[data-id="${id}"]`);
+            a.classList.remove('fw-bold');
+            a.classList.add('fw-normal', 'link-secondary');
+          }
           const postByBtn = state.posts.filter((post) => post.id === id)[0];
           const body = document.querySelector('body');
           body.classList.add('modal-open');
@@ -112,6 +118,17 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
           const nowModal = document.querySelector('.modal');
           nowModal.textContent = '';
           nowModal.append(elements.modal);
+        });
+        const links = ulPosts.querySelectorAll('a');
+        links.forEach((link) => {
+          link.addEventListener('click', () => {
+            const id = link.getAttribute('data-id');
+            if (!state.UIstate.modal.includes(id)) {
+              state.UIstate.modal.push(id);
+              link.classList.remove('fw-bold');
+              link.classList.add('fw-normal', 'link-secondary');
+            }
+          });
         });
       });
     }
