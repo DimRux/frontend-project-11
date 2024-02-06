@@ -2,22 +2,23 @@ import * as yup from 'yup';
 import i18next from 'i18next';
 import axios from 'axios';
 import _ from 'lodash';
-import view from './view.js';
-import resources from './resources.js';
+import setLocale from './setLocale.js';
+import validation from './validation.js';
+import watch from './watch.js';
+import resources from './locales/index.js';
+import fetch from './fetch.js';
 import parser from './parser.js';
 
 export default function app() {
-  const container = document.querySelector('.container-xxl');
-  const containerfirstChild = container.querySelector('.row');
   const elements = {
-    sections: containerfirstChild,
+    sections: document.querySelector('.container-xxl .row'),
     modal: document.querySelector('.modal'),
-    input: document.querySelector('input'),
-    p: document.querySelector('.feedback'),
-    form: document.querySelector('form'),
-    title: document.querySelector('h1'),
+    input: document.querySelector('#url-input'),
+    feedback: document.querySelector('.feedback'),
+    form: document.querySelector('.rss-form'),
+    title: document.querySelector('.display-3'),
     tagline: document.querySelector('.lead'),
-    fillInput: document.querySelector('label'),
+    label: document.querySelector('.form-floating label'),
     btnSubmit: document.querySelector('.btn-lg'),
     inputExample: document.querySelector('.text-muted'),
   };
@@ -25,11 +26,10 @@ export default function app() {
   const initState = {
     formState: 'filling',
     formIsValid: true,
-    input: '',
-    feedsUrl: [],
+    watchedFeeds: [],
     feeds: [],
     posts: [],
-    UIstate: {
+    uiState: {
       modal: [],
     },
     error: null,
@@ -43,32 +43,19 @@ export default function app() {
   }).then(() => {
     elements.title.textContent = i18n.t('title');
     elements.tagline.textContent = i18n.t('tagline');
-    elements.fillInput.textContent = i18n.t('fillInput');
+    elements.label.textContent = i18n.t('label');
     elements.btnSubmit.textContent = i18n.t('btnSubmit');
     elements.inputExample.textContent = i18n.t('inputExample');
     elements.input.setAttribute('placeholder', i18n.t('placeholder'));
 
-    const watchedState = view(elements, i18n, initState);
+    const watchedState = watch(elements, i18n, initState);
 
-    elements.input.addEventListener('input', (e) => {
-      e.preventDefault();
-      watchedState.input = e.target.value;
-      e.target.focus();
-    });
-
-    yup.setLocale({
-      string: {
-        url: 'errors.validation.url',
-      },
-      mixed: {
-        notOneOf: 'errors.validation.notOneOf',
-      },
-    });
+    yup.setLocale(setLocale);
 
     const schema = yup.string().url();
 
     function checkRss() {
-      const getRssFeeds = watchedState.feedsUrl.map((feed) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(feed)}`));
+      const getRssFeeds = watchedState.watchedFeeds.map((feed) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(feed)}`));
       const promises = Promise.all(getRssFeeds);
       promises
         .then((feeds) => {
@@ -106,13 +93,13 @@ export default function app() {
 
     elements.form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const currentSchema = schema.notOneOf(watchedState.feedsUrl);
-      currentSchema.validate(watchedState.input, { abortEarly: false })
+      const currentSchema = schema.notOneOf(watchedState.watchedFeeds);
+      validation(currentSchema, elements.input.value)
         .then(() => {
-          watchedState.feedsUrl.push(watchedState.input);
-          elements.input.value = '';
-          axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(watchedState.input)}`)
+          watchedState.watchedFeeds.push(elements.input.value);
+          fetch(elements.input.value)
             .then((res) => {
+              elements.input.value = '';
               watchedState.formState = 'processing';
               const essence = parser(res.data.contents);
               const [feed, posts] = essence;
@@ -138,6 +125,16 @@ export default function app() {
           watchedState.formIsValid = false;
           watchedState.error = error.message;
         });
+    });
+
+    elements.sections.addEventListener('click', (e) => {
+      if (e.target.classList.contains('btn')) {
+        e.preventDefault();
+      }
+      const dataId = e.target.getAttribute('data-id');
+      if (dataId && !watchedState.uiState.modal.includes(dataId)) {
+        watchedState.uiState.modal.push(dataId);
+      }
     });
   });
 }

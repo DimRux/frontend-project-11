@@ -17,22 +17,21 @@ const renderPosts = (state, i18n) => {
     const li = document.createElement('li');
     li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-item-start', 'border-0', 'border-end-0');
     const a = document.createElement('a');
-    const VisitedLinks = state.UIstate.modal;
-    if (VisitedLinks.includes(post.id)) {
-      a.classList.remove('fw-bold');
+    const visitedLinks = state.uiState.modal;
+    if (visitedLinks.includes(post.id)) {
       a.classList.add('fw-normal', 'link-secondary');
     } else a.classList.add('fw-bold');
     a.setAttribute('href', `${post.link}`);
     a.setAttribute('target', '_blank');
     a.setAttribute('rel', 'noopener noreferrer');
-    a.setAttribute('data-id', `${post.id}`);
+    a.dataset.id = post.id;
     a.textContent = post.content;
     const btn = document.createElement('button');
     btn.classList.add('btn', 'btn-outline-primary', 'btn-sm');
     btn.setAttribute('type', 'button');
-    btn.setAttribute('data-bs-toggle', 'modal');
-    btn.setAttribute('data-bs-target', '#modal');
-    btn.setAttribute('data-id', `${post.id}`);
+    btn.dataset.bsToggle = 'modal';
+    btn.dataset.bsTarget = '#modal';
+    btn.dataset.id = post.id;
     btn.textContent = i18n.t('btnPostWatch');
     li.append(a, btn);
     ulPosts.append(li);
@@ -60,7 +59,7 @@ const renderFeeds = (state, i18n) => {
     const titleFeed = document.createElement('h3');
     titleFeed.classList.add('h6', 'm-0');
     titleFeed.textContent = feed.title;
-    const descriptionFeed = document.createElement('p');
+    const descriptionFeed = document.createElement('feedback');
     descriptionFeed.classList.add('m-0', 'small', 'text-black-50');
     descriptionFeed.textContent = feed.descriptionRss;
     li.append(titleFeed, descriptionFeed);
@@ -74,8 +73,7 @@ const renderFeeds = (state, i18n) => {
 const openModal = (state, modal, i18n, btn, ulPosts) => {
   btn.addEventListener('click', () => {
     const id = btn.getAttribute('data-id');
-    if (!state.UIstate.modal.includes(id)) {
-      state.UIstate.modal.push(id);
+    if (!state.uiState.modal.includes(id)) {
       const a = ulPosts.querySelector(`[data-id="${id}"]`);
       a.classList.remove('fw-bold');
       a.classList.add('fw-normal', 'link-secondary');
@@ -96,8 +94,7 @@ const openModal = (state, modal, i18n, btn, ulPosts) => {
   links.forEach((link) => {
     link.addEventListener('click', () => {
       const id = link.getAttribute('data-id');
-      if (!state.UIstate.modal.includes(id)) {
-        state.UIstate.modal.push(id);
+      if (!state.uiState.modal.includes(id)) {
         link.classList.remove('fw-bold');
         link.classList.add('fw-normal', 'link-secondary');
       }
@@ -117,7 +114,7 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
   const {
     sections,
     input,
-    p,
+    feedback,
     modal,
   } = elements;
 
@@ -129,10 +126,10 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
     if (value === 'finished') {
       if (state.formIsValid) {
         input.classList.remove('is-invalid');
-        p.classList.remove('text-danger');
+        feedback.classList.remove('text-danger');
         input.classList.add('is-valid');
-        p.classList.add('text-success');
-        p.textContent = i18n.t('successful');
+        feedback.classList.add('text-success');
+        feedback.textContent = i18n.t('successful');
       }
 
       renderPosts(state, i18n);
@@ -150,10 +147,10 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
   if (path === 'error') {
     if (input.classList.contains('is-valid')) {
       input.classList.remove('is-valid');
-      p.classList.remove('text-success');
+      feedback.classList.remove('text-success');
     }
     input.classList.add('is-invalid');
-    p.classList.add('text-danger');
-    p.textContent = i18n.t(state.error);
+    feedback.classList.add('text-danger');
+    feedback.textContent = i18n.t(state.error);
   }
 });

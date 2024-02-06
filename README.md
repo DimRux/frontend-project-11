@@ -5,5 +5,14 @@
 <h2>Project description:</h2>
 <p>Rss Reader is a service for aggregating RSS feeds, which makes it convenient to read a variety of sources, for example, blogs. It allows you to add an unlimited number of RSS feeds, updates them itself and adds new entries to the general feed.</p>
 
+<h2>Installation and use:</h2>
+<ul>
+  <li>git clone https://github.com/DimRux/frontend-project-11.git</li>
+  <li>make install</li>
+  <li>make lint</li>
+  <li>make build</li>
+  <li>make develop</li>
+</ul>
+
 <h2>How it works:</h2>
 <p>To use the application, go to https://frontend-project-11-dimas-projects-73a84627.vercel.app/</p>
