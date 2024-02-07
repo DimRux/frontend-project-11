@@ -3,7 +3,9 @@ export default (data) => {
   const xmlDoc = parser.parseFromString(data, 'text/xml');
   const parserError = xmlDoc.querySelector('parsererror');
   if (parserError) {
-    throw new Error('parser');
+    const error = new Error(parserError.textContent);
+    error.isParser = true;
+    throw error;
   }
 
   const title = xmlDoc.querySelector('title').textContent;

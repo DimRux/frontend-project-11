@@ -1,6 +1,30 @@
 /* eslint-disable curly */
 import onChange from 'on-change';
 
+const createPostsLiElements = (state, i18n) => state.posts.map((post) => {
+  const li = document.createElement('li');
+  li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-item-start', 'border-0', 'border-end-0');
+  const a = document.createElement('a');
+  const visitedLinks = state.uiState.modal;
+  if (visitedLinks.includes(post.id)) {
+    a.classList.add('fw-normal', 'link-secondary');
+  } else a.classList.add('fw-bold');
+  a.setAttribute('href', `${post.link}`);
+  a.setAttribute('target', '_blank');
+  a.setAttribute('rel', 'noopener noreferrer');
+  a.dataset.id = post.id;
+  a.textContent = post.content;
+  const btn = document.createElement('button');
+  btn.classList.add('btn', 'btn-outline-primary', 'btn-sm');
+  btn.setAttribute('type', 'button');
+  btn.dataset.bsToggle = 'modal';
+  btn.dataset.bsTarget = '#modal';
+  btn.dataset.id = post.id;
+  btn.textContent = i18n.t('btnPostWatch');
+  li.append(a, btn);
+  return li;
+});
+
 const renderPosts = (state, i18n) => {
   const posts = document.querySelector('.posts');
   posts.textContent = '';
@@ -13,33 +37,25 @@ const renderPosts = (state, i18n) => {
   divPostsHeaderTitle.textContent = i18n.t('posts');
   const ulPosts = document.createElement('ul');
   ulPosts.classList.add('list-group', 'border-0', 'rounded-0');
-  state.posts.forEach((post) => {
-    const li = document.createElement('li');
-    li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-item-start', 'border-0', 'border-end-0');
-    const a = document.createElement('a');
-    const visitedLinks = state.uiState.modal;
-    if (visitedLinks.includes(post.id)) {
-      a.classList.add('fw-normal', 'link-secondary');
-    } else a.classList.add('fw-bold');
-    a.setAttribute('href', `${post.link}`);
-    a.setAttribute('target', '_blank');
-    a.setAttribute('rel', 'noopener noreferrer');
-    a.dataset.id = post.id;
-    a.textContent = post.content;
-    const btn = document.createElement('button');
-    btn.classList.add('btn', 'btn-outline-primary', 'btn-sm');
-    btn.setAttribute('type', 'button');
-    btn.dataset.bsToggle = 'modal';
-    btn.dataset.bsTarget = '#modal';
-    btn.dataset.id = post.id;
-    btn.textContent = i18n.t('btnPostWatch');
-    li.append(a, btn);
-    ulPosts.append(li);
-  });
+  const liElements = createPostsLiElements(state, i18n);
+  ulPosts.append(...liElements);
   divPostsHeader.append(divPostsHeaderTitle);
   divPosts.append(divPostsHeader, ulPosts);
   posts.append(divPosts);
 };
+
+const createFeedsLiElements = (feeds) => feeds.map((feed) => {
+  const li = document.createElement('li');
+  li.classList.add('list-group-item', 'border-0', 'border-end-0');
+  const titleFeed = document.createElement('h3');
+  titleFeed.classList.add('h6', 'm-0');
+  titleFeed.textContent = feed.title;
+  const descriptionFeed = document.createElement('feedback');
+  descriptionFeed.classList.add('m-0', 'small', 'text-black-50');
+  descriptionFeed.textContent = feed.descriptionRss;
+  li.append(titleFeed, descriptionFeed);
+  return li;
+});
 
 const renderFeeds = (state, i18n) => {
   const feeds = document.querySelector('.feeds');
@@ -53,18 +69,8 @@ const renderFeeds = (state, i18n) => {
   divFeedsHeaderTitle.textContent = i18n.t('feeds');
   const ulFeeds = document.createElement('ul');
   ulFeeds.classList.add('list-group', 'border-0', 'rounded-0');
-  state.feeds.forEach((feed) => {
-    const li = document.createElement('li');
-    li.classList.add('list-group-item', 'border-0', 'border-end-0');
-    const titleFeed = document.createElement('h3');
-    titleFeed.classList.add('h6', 'm-0');
-    titleFeed.textContent = feed.title;
-    const descriptionFeed = document.createElement('feedback');
-    descriptionFeed.classList.add('m-0', 'small', 'text-black-50');
-    descriptionFeed.textContent = feed.descriptionRss;
-    li.append(titleFeed, descriptionFeed);
-    ulFeeds.append(li);
-  });
+  const liElements = createFeedsLiElements(state.feeds);
+  ulFeeds.append(...liElements);
   divFeedsHeader.append(divFeedsHeaderTitle);
   divFeeds.append(divFeedsHeader, ulFeeds);
   feeds.append(divFeeds);
@@ -110,6 +116,22 @@ const closeModal = (button, modal$) => {
   });
 };
 
+const renderErrorFeedback = (input, feedback) => {
+  if (input.classList.contains('is-valid')) {
+    input.classList.remove('is-valid');
+    feedback.classList.remove('text-success');
+  }
+  input.classList.add('is-invalid');
+  feedback.classList.add('text-danger');
+};
+
+const renderSuccessfulFeedback = (input, feedback) => {
+  input.classList.remove('is-invalid');
+  feedback.classList.remove('text-danger');
+  input.classList.add('is-valid');
+  feedback.classList.add('text-success');
+};
+
 export default (elements, i18n, state) => onChange(state, (path, value) => {
   const {
     sections,
@@ -122,35 +144,37 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
   container.textContent = '';
   container.append(sections);
 
-  if (path === 'formState') {
-    if (value === 'finished') {
-      if (state.formIsValid) {
-        input.classList.remove('is-invalid');
-        feedback.classList.remove('text-danger');
-        input.classList.add('is-valid');
-        feedback.classList.add('text-success');
-        feedback.textContent = i18n.t('successful');
-      }
+  if (path === 'formState' && value === 'finished') {
+    renderSuccessfulFeedback(input, feedback);
+    feedback.textContent = i18n.t('successful');
 
-      renderPosts(state, i18n);
-      renderFeeds(state, i18n);
-
-      const ulPosts = document.querySelector('ul');
-      const buttons = ulPosts.querySelectorAll('button');
-      buttons.forEach((btn) => {
-        openModal(state, modal, i18n, btn, ulPosts);
-        closeModal(btn, modal);
-      });
-    }
+    const ulPosts = document.querySelector('ul');
+    const buttons = ulPosts.querySelectorAll('button');
+    buttons.forEach((btn) => {
+      openModal(state, modal, i18n, btn, ulPosts);
+      closeModal(btn, modal);
+    });
   }
 
-  if (path === 'error') {
-    if (input.classList.contains('is-valid')) {
-      input.classList.remove('is-valid');
-      feedback.classList.remove('text-success');
-    }
-    input.classList.add('is-invalid');
-    feedback.classList.add('text-danger');
-    feedback.textContent = i18n.t(state.error);
+  if (path === 'posts' && value.length !== 0) {
+    renderPosts(state, i18n);
+  }
+
+  if (path === 'feeds' && value.length !== 0) {
+    renderFeeds(state, i18n);
+  }
+
+  if (path === 'errors.validateProcess') {
+    renderErrorFeedback(input, feedback);
+    feedback.textContent = i18n.t(state.errors.validateProcess);
+  }
+
+  if (path === 'errors.parsingProcess') {
+    renderErrorFeedback(input, feedback);
+    feedback.textContent = i18n.t(state.errors.parsingProcess);
+  }
+  if (path === 'errors.networkProcess') {
+    renderErrorFeedback(input, feedback);
+    feedback.textContent = i18n.t(state.errors.networkProcess);
   }
 });

@@ -25,14 +25,17 @@ export default function app() {
 
   const initState = {
     formState: 'filling',
-    formIsValid: true,
     watchedFeeds: [],
     feeds: [],
     posts: [],
     uiState: {
       modal: [],
     },
-    error: null,
+    errors: {
+      validateProcess: null,
+      parsingProcess: null,
+      networkProcess: null,
+    },
   };
 
   const i18n = i18next.createInstance();
@@ -110,20 +113,21 @@ export default function app() {
               const newPosts = [...createIdPosts, ...watchedState.posts];
               watchedState.feeds = newFeed;
               watchedState.posts = newPosts;
-              watchedState.formIsValid = true;
               watchedState.formState = 'finished';
             })
             .catch((err) => {
-              watchedState.formIsValid = false;
-              if (err.message === 'parser') {
-                watchedState.error = 'errors.parser';
-              } else watchedState.error = 'errors.network';
+              if (err.isParser) {
+                watchedState.errors.parsingProcess = null;
+                watchedState.errors.parsingProcess = 'errors.parser';
+              } else {
+                watchedState.errors.networkProcess = null;
+                watchedState.errors.networkProcess = 'errors.network';
+              }
             });
         })
         .catch((error) => {
-          watchedState.formState = 'failed';
-          watchedState.formIsValid = false;
-          watchedState.error = error.message;
+          watchedState.errors.validateProcess = null;
+          watchedState.errors.validateProcess = error.message;
         });
     });
 
