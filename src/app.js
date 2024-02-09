@@ -6,8 +6,34 @@ import setLocale from './setLocale.js';
 import validation from './validation.js';
 import watch from './watch.js';
 import resources from './locales/index.js';
-import fetch from './fetch.js';
 import parser from './parser.js';
+
+const upPosts = (feedsData, statePosts, stateFeeds) => {
+  const resultFeeds = [];
+  const resultPosts = [];
+
+  feedsData.forEach((res) => {
+    const { contents } = res.data;
+    const [feed, posts] = parser(contents);
+
+    const postsTitle = posts.map(({ title }) => title);
+    const oldContentPosts = statePosts.map(({ title }) => title);
+    const newPostsTitle = postsTitle.filter((post) => !oldContentPosts.includes(post));
+    const newPosts = posts.filter(({ title }) => newPostsTitle.includes(title));
+
+    const oldFeed = stateFeeds.find(({ title }) => title === feed.title);
+    const { feedId } = oldFeed;
+    feed.feedId = feedId;
+
+    const oldPosts = statePosts.filter((post) => post.feedId === feedId);
+    const createIdPosts = newPosts.map((item) => ({ ...item, feedId, id: _.uniqueId() }));
+    const allPosts = [...createIdPosts, ...oldPosts].slice(0, oldPosts.length);
+
+    resultFeeds.unshift(feed);
+    resultPosts.unshift(...allPosts);
+  });
+  return [resultFeeds, resultPosts];
+};
 
 export default function app() {
   const elements = {
@@ -59,48 +85,36 @@ export default function app() {
 
     function checkRss() {
       const getRssFeeds = watchedState.watchedFeeds.map((feed) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(feed)}`));
-      const promises = Promise.all(getRssFeeds);
-      promises
-        .then((feeds) => {
-          const resultFeeds = [];
-          const resultPosts = [];
-          feeds.forEach((res) => {
-            const essence = parser(res.data.contents);
-            const [feed, posts] = essence;
-            const postsTitle = posts.map(({ content }) => content);
-            const oldContentPosts = watchedState.posts.map(({ content }) => content);
-            const newPostsTitle = postsTitle
-              .filter((post) => !oldContentPosts.includes(post));
-            const newPosts = posts.filter(({ content }) => newPostsTitle.includes(content));
-            const oldFeed = watchedState.feeds.filter(({ title }) => title === feed.title);
-            const { feedId } = oldFeed[0];
-            feed.feedId = feedId;
-            const oldPosts = watchedState.posts
-              .filter((post) => post.feedId === feedId);
-            const createIdPosts = newPosts.map((item) => ({ ...item, feedId, id: _.uniqueId() }));
-            const allPosts = [...createIdPosts, ...oldPosts]
-              .filter((item, index) => index < oldPosts.length);
-            resultFeeds.unshift(feed);
-            resultPosts.unshift(...allPosts);
-          });
+
+      Promise.all(getRssFeeds)
+        .then((feedsData) => {
+          const [resFeeds, resPosts] = upPosts(feedsData, watchedState.posts, watchedState.feeds);
+
           watchedState.formState = 'processing';
-          watchedState.feeds = resultFeeds;
-          watchedState.posts = resultPosts;
-          if (resultPosts.length !== 0) {
+          watchedState.feeds = resFeeds;
+          watchedState.posts = resPosts;
+
+          if (resPosts.length !== 0) {
             watchedState.formState = 'finished';
           }
+        })
+        .catch((error) => {
+          console.error(error);
         });
+
       setTimeout(checkRss, 5000);
     }
     checkRss();
 
     elements.form.addEventListener('submit', (e) => {
       e.preventDefault();
+      const formData = new FormData(e.target);
+      const inputValue = formData.get('url');
       const currentSchema = schema.notOneOf(watchedState.watchedFeeds);
-      validation(currentSchema, elements.input.value)
+      validation(currentSchema, inputValue)
         .then(() => {
-          watchedState.watchedFeeds.push(elements.input.value);
-          fetch(elements.input.value)
+          watchedState.watchedFeeds.push(inputValue);
+          axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(inputValue)}`)
             .then((res) => {
               elements.input.value = '';
               watchedState.formState = 'processing';
@@ -132,7 +146,7 @@ export default function app() {
     });
 
     elements.sections.addEventListener('click', (e) => {
-      if (e.target.classList.contains('btn')) {
+      if (e.target.hasAttribute('data-bs-toggle')) {
         e.preventDefault();
       }
       const dataId = e.target.getAttribute('data-id');

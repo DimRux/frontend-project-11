@@ -14,7 +14,7 @@ export default (data) => {
 
   const items = Array.from(xmlDoc.querySelectorAll('item'))
     .map((item) => ({
-      content: item.querySelector('title').textContent,
+      title: item.querySelector('title').textContent,
       description: item.querySelector('description').textContent,
       link: item.querySelector('link').textContent,
     }));

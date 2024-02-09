@@ -13,7 +13,7 @@ const createPostsLiElements = (state, i18n) => state.posts.map((post) => {
   a.setAttribute('target', '_blank');
   a.setAttribute('rel', 'noopener noreferrer');
   a.dataset.id = post.id;
-  a.textContent = post.content;
+  a.textContent = post.title;
   const btn = document.createElement('button');
   btn.classList.add('btn', 'btn-outline-primary', 'btn-sm');
   btn.setAttribute('type', 'button');
@@ -76,34 +76,39 @@ const renderFeeds = (state, i18n) => {
   feeds.append(divFeeds);
 };
 
+const updateLinkStyle = (state, ulPosts, id) => {
+  if (!state.uiState.modal.includes(id)) {
+    const a = ulPosts.querySelector(`[data-id="${id}"]`);
+    a.classList.remove('fw-bold');
+    a.classList.add('fw-normal', 'link-secondary');
+  }
+};
+
+const updateModalContent = (modal, state, id, i18n) => {
+  const postByBtn = state.posts.filter((post) => post.id === id)[0];
+  const modalTitle = modal.querySelector('.modal-title');
+  modalTitle.textContent = postByBtn.title;
+  const modalBody = modal.querySelector('.modal-body');
+  modalBody.textContent = postByBtn.description;
+  const fullArticle = modal.querySelector('.full-article');
+  fullArticle.setAttribute('href', `${postByBtn.link}`);
+  fullArticle.textContent = i18n.t('fullArticle');
+  const btnCloseModal = modal.querySelector('.btn-secondary');
+  btnCloseModal.textContent = i18n.t('modalBtnClose');
+};
+
 const openModal = (state, modal, i18n, btn, ulPosts) => {
   btn.addEventListener('click', () => {
     const id = btn.getAttribute('data-id');
-    if (!state.uiState.modal.includes(id)) {
-      const a = ulPosts.querySelector(`[data-id="${id}"]`);
-      a.classList.remove('fw-bold');
-      a.classList.add('fw-normal', 'link-secondary');
-    }
-    const postByBtn = state.posts.filter((post) => post.id === id)[0];
-    const modalTitle = modal.querySelector('.modal-title');
-    modalTitle.textContent = postByBtn.content;
-    const modalBody = modal.querySelector('.modal-body');
-    modalBody.textContent = postByBtn.description;
-    const fullArticle = modal.querySelector('.full-article');
-    fullArticle.setAttribute('href', `${postByBtn.link}`);
-    fullArticle.textContent = i18n.t('fullArticle');
-    const btnCloseModal = modal.querySelector('.btn-secondary');
-    btnCloseModal.textContent = i18n.t('modalBtnClose');
+    updateLinkStyle(state, ulPosts, id);
+    updateModalContent(modal, state, id, i18n);
   });
 
   const links = ulPosts.querySelectorAll('a');
   links.forEach((link) => {
     link.addEventListener('click', () => {
       const id = link.getAttribute('data-id');
-      if (!state.uiState.modal.includes(id)) {
-        link.classList.remove('fw-bold');
-        link.classList.add('fw-normal', 'link-secondary');
-      }
+      updateLinkStyle(state, ulPosts, id);
     });
   });
 };
