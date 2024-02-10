@@ -139,7 +139,7 @@ const renderSuccessfulFeedback = (input, feedback) => {
 
 export default (elements, i18n, state) => onChange(state, (path, value) => {
   const {
-    sections,
+    emptyContainer,
     input,
     feedback,
     modal,
@@ -147,7 +147,7 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
 
   const container = document.querySelector('.container-xxl');
   container.textContent = '';
-  container.append(sections);
+  container.append(emptyContainer);
 
   if (path === 'formState' && value === 'finished') {
     renderSuccessfulFeedback(input, feedback);

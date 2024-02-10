@@ -1,15 +1,12 @@
 import * as yup from 'yup';
 import i18next from 'i18next';
 import axios from 'axios';
-import _ from 'lodash';
-import setLocale from './setLocale.js';
-import validation from './validation.js';
+import uniqueId from 'lodash/uniqueId.js';
 import watch from './watch.js';
 import resources from './locales/index.js';
 import parser from './parser.js';
 
-const upPosts = (feedsData, statePosts, stateFeeds) => {
-  const resultFeeds = [];
+const updatePosts = (feedsData, statePosts, stateFeeds) => {
   const resultPosts = [];
 
   feedsData.forEach((res) => {
@@ -26,32 +23,25 @@ const upPosts = (feedsData, statePosts, stateFeeds) => {
     feed.feedId = feedId;
 
     const oldPosts = statePosts.filter((post) => post.feedId === feedId);
-    const createIdPosts = newPosts.map((item) => ({ ...item, feedId, id: _.uniqueId() }));
+    const createIdPosts = newPosts.map((item) => ({ ...item, feedId, id: uniqueId() }));
     const allPosts = [...createIdPosts, ...oldPosts].slice(0, oldPosts.length);
 
-    resultFeeds.unshift(feed);
     resultPosts.unshift(...allPosts);
   });
-  return [resultFeeds, resultPosts];
+  return resultPosts;
 };
 
 export default function app() {
   const elements = {
-    sections: document.querySelector('.container-xxl .row'),
+    emptyContainer: document.querySelector('.container-xxl .row'),
     modal: document.querySelector('.modal'),
     input: document.querySelector('#url-input'),
     feedback: document.querySelector('.feedback'),
     form: document.querySelector('.rss-form'),
-    title: document.querySelector('.display-3'),
-    tagline: document.querySelector('.lead'),
-    label: document.querySelector('.form-floating label'),
-    btnSubmit: document.querySelector('.btn-lg'),
-    inputExample: document.querySelector('.text-muted'),
   };
 
   const initState = {
     formState: 'filling',
-    watchedFeeds: [],
     feeds: [],
     posts: [],
     uiState: {
@@ -70,59 +60,66 @@ export default function app() {
     debug: false,
     resources,
   }).then(() => {
-    elements.title.textContent = i18n.t('title');
-    elements.tagline.textContent = i18n.t('tagline');
-    elements.label.textContent = i18n.t('label');
-    elements.btnSubmit.textContent = i18n.t('btnSubmit');
-    elements.inputExample.textContent = i18n.t('inputExample');
+    document.querySelector('.display-3').textContent = i18n.t('title');
+    document.querySelector('.lead').textContent = i18n.t('tagline');
+    document.querySelector('.form-floating label').textContent = i18n.t('label');
+    document.querySelector('button[aria-label="add"]').textContent = i18n.t('btnSubmit');
+    document.querySelector('.text-muted').textContent = i18n.t('inputExample');
     elements.input.setAttribute('placeholder', i18n.t('placeholder'));
 
     const watchedState = watch(elements, i18n, initState);
 
-    yup.setLocale(setLocale);
+    yup.setLocale({
+      string: {
+        url: 'errors.validation.url',
+      },
+      mixed: {
+        notOneOf: 'errors.validation.notOneOf',
+      },
+    });
 
     const schema = yup.string().url();
 
-    function checkRss() {
-      const getRssFeeds = watchedState.watchedFeeds.map((feed) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(feed)}`));
+    function updatePostsEveryFiveSeconds() {
+      const getRssFeeds = watchedState.feeds.map((feed) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(feed)}`));
 
       Promise.all(getRssFeeds)
         .then((feedsData) => {
-          const [resFeeds, resPosts] = upPosts(feedsData, watchedState.posts, watchedState.feeds);
+          const resultPosts = updatePosts(feedsData, watchedState.posts, watchedState.feeds);
 
           watchedState.formState = 'processing';
-          watchedState.feeds = resFeeds;
-          watchedState.posts = resPosts;
+          watchedState.posts = resultPosts;
 
-          if (resPosts.length !== 0) {
+          if (resultPosts.length !== 0) {
             watchedState.formState = 'finished';
           }
         })
         .catch((error) => {
           console.error(error);
+        })
+        .finally(() => {
+          setTimeout(updatePostsEveryFiveSeconds, 5000);
         });
-
-      setTimeout(checkRss, 5000);
     }
-    checkRss();
+    updatePostsEveryFiveSeconds();
 
     elements.form.addEventListener('submit', (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
       const inputValue = formData.get('url');
-      const currentSchema = schema.notOneOf(watchedState.watchedFeeds);
-      validation(currentSchema, inputValue)
+      const currentSchema = schema.notOneOf(watchedState.feeds);
+      currentSchema.validate(inputValue, { abortEarly: false })
         .then(() => {
-          watchedState.watchedFeeds.push(inputValue);
+          watchedState.feeds.push(inputValue);
           axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(inputValue)}`)
             .then((res) => {
               elements.input.value = '';
               watchedState.formState = 'processing';
               const essence = parser(res.data.contents);
               const [feed, posts] = essence;
-              const feedId = _.uniqueId();
+              const feedId = uniqueId();
               feed.feedId = feedId;
-              const createIdPosts = posts.map((item) => ({ ...item, feedId, id: _.uniqueId() }));
+              const createIdPosts = posts.map((item) => ({ ...item, feedId, id: uniqueId() }));
               const newFeed = [feed, ...watchedState.feeds];
               const newPosts = [...createIdPosts, ...watchedState.posts];
               watchedState.feeds = newFeed;
@@ -145,7 +142,7 @@ export default function app() {
         });
     });
 
-    elements.sections.addEventListener('click', (e) => {
+    elements.emptyContainer.addEventListener('click', (e) => {
       if (e.target.hasAttribute('data-bs-toggle')) {
         e.preventDefault();
       }
