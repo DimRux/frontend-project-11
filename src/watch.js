@@ -5,7 +5,7 @@ const createPostsLiElements = (state, i18n) => state.posts.map((post) => {
   const li = document.createElement('li');
   li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-item-start', 'border-0', 'border-end-0');
   const a = document.createElement('a');
-  const visitedLinks = state.uiState.modal;
+  const visitedLinks = state.uiState.watchedPosts;
   if (visitedLinks.includes(post.id)) {
     a.classList.add('fw-normal', 'link-secondary');
   } else a.classList.add('fw-bold');
@@ -26,6 +26,7 @@ const createPostsLiElements = (state, i18n) => state.posts.map((post) => {
 });
 
 const renderPosts = (state, i18n) => {
+  if (state.posts.length === 0) return;
   const posts = document.querySelector('.posts');
   posts.textContent = '';
   const divPosts = document.createElement('div');
@@ -58,6 +59,7 @@ const createFeedsLiElements = (feeds) => feeds.map((feed) => {
 });
 
 const renderFeeds = (state, i18n) => {
+  if (state.feeds.length === 0) return;
   const feeds = document.querySelector('.feeds');
   feeds.textContent = '';
   const divFeeds = document.createElement('div');
@@ -77,7 +79,7 @@ const renderFeeds = (state, i18n) => {
 };
 
 const updateLinkStyle = (state, ulPosts, id) => {
-  if (!state.uiState.modal.includes(id)) {
+  if (!state.uiState.watchedPosts.includes(id)) {
     const a = ulPosts.querySelector(`[data-id="${id}"]`);
     a.classList.remove('fw-bold');
     a.classList.add('fw-normal', 'link-secondary');
@@ -85,6 +87,11 @@ const updateLinkStyle = (state, ulPosts, id) => {
 };
 
 const updateModalContent = (modal, state, id, i18n) => {
+  if (id === null) {
+    const nowModal = document.querySelector('.modal');
+    nowModal.textContent = '';
+    nowModal.append(modal);
+  }
   const postByBtn = state.posts.filter((post) => post.id === id)[0];
   const modalTitle = modal.querySelector('.modal-title');
   modalTitle.textContent = postByBtn.title;
@@ -95,30 +102,6 @@ const updateModalContent = (modal, state, id, i18n) => {
   fullArticle.textContent = i18n.t('fullArticle');
   const btnCloseModal = modal.querySelector('.btn-secondary');
   btnCloseModal.textContent = i18n.t('modalBtnClose');
-};
-
-const openModal = (state, modal, i18n, btn, ulPosts) => {
-  btn.addEventListener('click', () => {
-    const id = btn.getAttribute('data-id');
-    updateLinkStyle(state, ulPosts, id);
-    updateModalContent(modal, state, id, i18n);
-  });
-
-  const links = ulPosts.querySelectorAll('a');
-  links.forEach((link) => {
-    link.addEventListener('click', () => {
-      const id = link.getAttribute('data-id');
-      updateLinkStyle(state, ulPosts, id);
-    });
-  });
-};
-
-const closeModal = (button, modal$) => {
-  button.addEventListener('hidden.bs.modal', () => {
-    const nowModal = document.querySelector('.modal');
-    nowModal.textContent = '';
-    nowModal.append(modal$);
-  });
 };
 
 const renderErrorFeedback = (input, feedback) => {
@@ -149,37 +132,43 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
   container.textContent = '';
   container.append(emptyContainer);
 
-  if (path === 'formState' && value === 'finished') {
-    renderSuccessfulFeedback(input, feedback);
-    feedback.textContent = i18n.t('successful');
+  switch (path) {
+    case 'formState.status':
+      if (value === 'finished') {
+        renderSuccessfulFeedback(input, feedback);
+        feedback.textContent = i18n.t('successful');
+      }
+      break;
 
-    const ulPosts = document.querySelector('ul');
-    const buttons = ulPosts.querySelectorAll('button');
-    buttons.forEach((btn) => {
-      openModal(state, modal, i18n, btn, ulPosts);
-      closeModal(btn, modal);
-    });
-  }
+    case 'uiState.activePostId':
+      updateModalContent(modal, state, state.uiState.activePostId, i18n);
+      updateLinkStyle(state, emptyContainer, state.uiState.activePostId);
+      break;
 
-  if (path === 'posts' && value.length !== 0) {
-    renderPosts(state, i18n);
-  }
+    case 'posts':
+      renderPosts(state, i18n);
+      break;
 
-  if (path === 'feeds' && value.length !== 0) {
-    renderFeeds(state, i18n);
-  }
+    case 'feeds':
+      renderFeeds(state, i18n);
+      break;
 
-  if (path === 'errors.validateProcess') {
-    renderErrorFeedback(input, feedback);
-    feedback.textContent = i18n.t(state.errors.validateProcess);
-  }
+    case 'formState.validateError':
+      renderErrorFeedback(input, feedback);
+      feedback.textContent = i18n.t(state.formState.validateError);
+      break;
 
-  if (path === 'errors.parsingProcess') {
-    renderErrorFeedback(input, feedback);
-    feedback.textContent = i18n.t(state.errors.parsingProcess);
-  }
-  if (path === 'errors.networkProcess') {
-    renderErrorFeedback(input, feedback);
-    feedback.textContent = i18n.t(state.errors.networkProcess);
+    case 'rssDownloader.errors.parsingProcess':
+      renderErrorFeedback(input, feedback);
+      feedback.textContent = i18n.t(state.rssDownloader.errors.parsingProcess);
+      break;
+
+    case 'rssDownloader.errors.networkProcess':
+      renderErrorFeedback(input, feedback);
+      feedback.textContent = i18n.t(state.rssDownloader.errors.networkProcess);
+      break;
+
+    default:
+      break;
   }
 });
