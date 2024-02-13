@@ -142,19 +142,12 @@ export default function app() {
         });
     });
 
-    const openModal = (id) => {
-      watchedState.uiState.activePostId = id;
-    };
-
-    const closeModal = () => {
-      watchedState.uiState.activePostId = null;
-    };
-
     elements.emptyContainer.addEventListener('click', (e) => {
       const dataId = e.target.getAttribute('data-id');
+      if (!dataId) return;
       if (e.target.hasAttribute('data-bs-toggle')) {
         e.preventDefault();
-        openModal(dataId);
+        watchedState.uiState.activePostId = dataId;
       }
       watchedState.uiState.activePostId = dataId;
       if (dataId && !watchedState.uiState.watchedPosts.includes(dataId)) {
@@ -165,7 +158,7 @@ export default function app() {
     const buttons = elements.emptyContainer.querySelectorAll('button');
     buttons.forEach((btn) => {
       btn.addEventListener('hidden.bs.modal', () => {
-        closeModal();
+        watchedState.uiState.activePostId = null;
       });
     });
   });

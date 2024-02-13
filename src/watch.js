@@ -87,11 +87,6 @@ const updateLinkStyle = (state, ulPosts, id) => {
 };
 
 const updateModalContent = (modal, state, id, i18n) => {
-  if (id === null) {
-    const nowModal = document.querySelector('.modal');
-    nowModal.textContent = '';
-    nowModal.append(modal);
-  }
   const postByBtn = state.posts.filter((post) => post.id === id)[0];
   const modalTitle = modal.querySelector('.modal-title');
   modalTitle.textContent = postByBtn.title;
@@ -104,39 +99,37 @@ const updateModalContent = (modal, state, id, i18n) => {
   btnCloseModal.textContent = i18n.t('modalBtnClose');
 };
 
-const renderErrorFeedback = (input, feedback) => {
+const renderErrorFeedback = (input, elements, i18n, errorPath) => {
+  const { feedback } = elements;
   if (input.classList.contains('is-valid')) {
     input.classList.remove('is-valid');
     feedback.classList.remove('text-success');
   }
   input.classList.add('is-invalid');
   feedback.classList.add('text-danger');
+  feedback.textContent = i18n.t(errorPath);
 };
 
-const renderSuccessfulFeedback = (input, feedback) => {
+const renderSuccessfulFeedback = (input, elements, i18n, successfulPath) => {
+  const { feedback } = elements;
   input.classList.remove('is-invalid');
   feedback.classList.remove('text-danger');
   input.classList.add('is-valid');
   feedback.classList.add('text-success');
+  feedback.textContent = i18n.t(successfulPath);
 };
 
 export default (elements, i18n, state) => onChange(state, (path, value) => {
-  const {
-    emptyContainer,
-    input,
-    feedback,
-    modal,
-  } = elements;
+  const { emptyContainer, input, modal } = elements;
 
   const container = document.querySelector('.container-xxl');
-  container.textContent = '';
+  container.innerHTML = '';
   container.append(emptyContainer);
 
   switch (path) {
     case 'formState.status':
       if (value === 'finished') {
-        renderSuccessfulFeedback(input, feedback);
-        feedback.textContent = i18n.t('successful');
+        renderSuccessfulFeedback(input, elements, i18n, 'successful');
       }
       break;
 
@@ -154,18 +147,15 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
       break;
 
     case 'formState.validateError':
-      renderErrorFeedback(input, feedback);
-      feedback.textContent = i18n.t(state.formState.validateError);
+      renderErrorFeedback(input, elements, i18n, state.formState.validateError);
       break;
 
     case 'rssDownloader.errors.parsingProcess':
-      renderErrorFeedback(input, feedback);
-      feedback.textContent = i18n.t(state.rssDownloader.errors.parsingProcess);
+      renderErrorFeedback(input, elements, i18n, state.rssDownloader.errors.parsingProcess);
       break;
 
     case 'rssDownloader.errors.networkProcess':
-      renderErrorFeedback(input, feedback);
-      feedback.textContent = i18n.t(state.rssDownloader.errors.networkProcess);
+      renderErrorFeedback(input, elements, i18n, state.rssDownloader.errors.networkProcess);
       break;
 
     default:
