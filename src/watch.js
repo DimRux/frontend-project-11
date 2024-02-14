@@ -25,9 +25,9 @@ const createPostsLiElements = (state, i18n) => state.posts.map((post) => {
   return li;
 });
 
-const renderPosts = (state, i18n) => {
+const renderPosts = (state, i18n, containerPosts) => {
   if (state.posts.length === 0) return;
-  const posts = document.querySelector('.posts');
+  const posts = containerPosts;
   posts.textContent = '';
   const divPosts = document.createElement('div');
   divPosts.classList.add('card', 'border-0');
@@ -58,9 +58,9 @@ const createFeedsLiElements = (feeds) => feeds.map((feed) => {
   return li;
 });
 
-const renderFeeds = (state, i18n) => {
+const renderFeeds = (state, i18n, containerFeeds) => {
   if (state.feeds.length === 0) return;
-  const feeds = document.querySelector('.feeds');
+  const feeds = containerFeeds;
   feeds.textContent = '';
   const divFeeds = document.createElement('div');
   divFeeds.classList.add('card', 'border-0');
@@ -86,7 +86,7 @@ const updateLinkStyle = (state, ulPosts, id) => {
   }
 };
 
-const updateModalContent = (modal, state, id, i18n) => {
+const updateModalContent = (modal, state, id) => {
   const postByBtn = state.posts.filter((post) => post.id === id)[0];
   const modalTitle = modal.querySelector('.modal-title');
   modalTitle.textContent = postByBtn.title;
@@ -94,9 +94,6 @@ const updateModalContent = (modal, state, id, i18n) => {
   modalBody.textContent = postByBtn.description;
   const fullArticle = modal.querySelector('.full-article');
   fullArticle.setAttribute('href', `${postByBtn.link}`);
-  fullArticle.textContent = i18n.t('fullArticle');
-  const btnCloseModal = modal.querySelector('.btn-secondary');
-  btnCloseModal.textContent = i18n.t('modalBtnClose');
 };
 
 const renderErrorFeedback = (input, elements, i18n, errorPath) => {
@@ -120,11 +117,16 @@ const renderSuccessfulFeedback = (input, elements, i18n, successfulPath) => {
 };
 
 export default (elements, i18n, state) => onChange(state, (path, value) => {
-  const { emptyContainer, input, modal } = elements;
+  const {
+    containerPosts,
+    containerFeeds,
+    input,
+    modal,
+  } = elements;
 
-  const container = document.querySelector('.container-xxl');
+  const container = document.querySelector('.container-xxl .row');
   container.innerHTML = '';
-  container.append(emptyContainer);
+  container.append(containerPosts, containerFeeds);
 
   switch (path) {
     case 'formState.status':
@@ -134,16 +136,16 @@ export default (elements, i18n, state) => onChange(state, (path, value) => {
       break;
 
     case 'uiState.activePostId':
-      updateModalContent(modal, state, state.uiState.activePostId, i18n);
-      updateLinkStyle(state, emptyContainer, state.uiState.activePostId);
+      updateModalContent(modal, state, state.uiState.activePostId);
+      updateLinkStyle(state, containerPosts, state.uiState.activePostId);
       break;
 
     case 'posts':
-      renderPosts(state, i18n);
+      renderPosts(state, i18n, containerPosts);
       break;
 
     case 'feeds':
-      renderFeeds(state, i18n);
+      renderFeeds(state, i18n, containerFeeds);
       break;
 
     case 'formState.validateError':
