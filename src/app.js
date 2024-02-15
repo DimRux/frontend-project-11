@@ -69,7 +69,6 @@ export default function app() {
       status: '',
       validateError: null,
     },
-    watchedUrl: [],
     feeds: [],
     posts: [],
     uiState: {
